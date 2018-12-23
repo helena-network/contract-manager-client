@@ -1,19 +1,23 @@
-// const ContractManager = require('@frontier-token-research/contract-manager-client')
 const ContractManager = require('../index.js')
 const semanticRelease = require('./sem-release.js')
-
 const fs = require('fs')
+
 let VERSION
 
 let imports = []
 
-// const truffleBuildDirectory = PROJECT_DIR + '/build'
-
-async function getContractsInfo (branch, githubRepoUrl, projectDir) {
+async function getContractsInfo (options) {
   let updates = []
-  await setVersion(branch, githubRepoUrl, projectDir)
 
-  const testFolder = projectDir + '/build/contracts'
+  const testFolder = options.projectDirectory + '/build/contracts'
+  let tag
+
+  try {
+    tag = options.customTag ? options.tag : 'default'
+  } catch (error) {
+    console.error('Failed parsing custom tag, using default' + error)
+    tag = 'default'
+  }
 
   try {
     fs.readdirSync(testFolder).forEach(file => {
@@ -38,7 +42,7 @@ async function getContractsInfo (branch, githubRepoUrl, projectDir) {
         address: contract.networks[networkKeys[0]].address,
         abi: contract,
         version: VERSION,
-        tag: 'dev'
+        tag: tag
       }
       updates.push(updateItem)
     }
@@ -50,10 +54,17 @@ async function getContractsInfo (branch, githubRepoUrl, projectDir) {
   return updates
 }
 
-async function setVersion (branch, githubRepoUrl, projectDir) {
-  VERSION = await semanticRelease.getNextVersion(branch, githubRepoUrl, projectDir)
-  // if(VERSION)
-  // VERSION = '0.0.0-' + getTimestamp()
+async function setSemanticVersion (branch, githubRepoUrl, projectDirectory) {
+  try {
+    VERSION = await semanticRelease.getNextVersion(branch, githubRepoUrl, projectDirectory)
+    const dots = ('VERSION'.match(/./g) || []).length // check that it's a well formated version
+    if (dots != 2) {
+      throw new Error('The semantic version is not well formated, defaulting to 0.0.{timestamp}')
+    }
+  } catch (error) {
+    console.log('The semantic release calculation failed: ' + error)
+    VERSION = '0.0.0-' + getTimestamp()
+  }
 }
 
 function getVersion () {
@@ -74,8 +85,19 @@ function getTimestamp () {
   return Date.now() / 1000 | 0
 }
 
-async function updateContractManager (branch, githubRepoUrl, projectDir) {
-  let updates = await getContractsInfo(branch, githubRepoUrl, projectDir)
+async function updateContractManager (options) {
+  try {
+    if (!options.customVersion) {
+      console.log('Setting semantic release version')
+      await setSemanticVersion(options.semanticRelease.branch, options.semanticRelease.githubRepo, options.projectDirectory)
+    } else {
+      VERSION = options.version
+    }
+  } catch (error) {
+    console.error('Failed at reading the options object\n' + error)
+  }
+
+  let updates = await getContractsInfo(options)
 
   for (let update of updates) {
     try {
@@ -86,11 +108,5 @@ async function updateContractManager (branch, githubRepoUrl, projectDir) {
     }
   }
 }
-
-// Main flow
-// const GITHUB_REPO = 'git@github.com:Frontier-project/TRL.git'
-// const BRANCH = 'FTR-261/feat/get-automatic-compensation-deployed-on-develop'
-// const PROJECT_DIR = '/Users/boss/git/frontier/trl-project/trl'
-// updateContractManager(BRANCH, GITHUB_REPO, PROJECT_DIR)
 
 module.exports.updateContractManager = updateContractManager

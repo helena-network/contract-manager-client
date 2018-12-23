@@ -9,6 +9,15 @@ let settings = {
   projectDirectory: false
 }
 
+let options = {
+  customVersion: false,
+  customTag: false,
+  semanticRelease: {
+    branch: false,
+    githubRepoUrl: false
+  }
+}
+
 program
   .version('0.1.0')
 
@@ -16,6 +25,8 @@ program
   .option('-g, --githubRepo [repoUrl]', 'Set github repo')
   .option('-d, --buildDir [directory]', 'Set build directory')
   .option('-b, --branch [git-branch]', 'Set github branch')
+  .option('-r, --releaseVersion [releaseVersion]', 'Set custom version')
+  .option('-t, --tag [tag]', 'Set release tag')
 
   .parse(process.argv)
 
@@ -23,35 +34,46 @@ console.log('Passed the following args:')
 if (program.config) {
   console.log('  - config file' + program.config)
   try {
-  	const configFile = require(program.config)
-  	if (configFile.GITHUB_REPO) {
-  		settings.githubRepo = configFile.GITHUB_REPO
-  	}
-  	if (configFile.BRANCH) {
-  		settings.branch = configFile.BRANCH
-  	}
-  	if (configFile.PROJECT_DIR) {
-  		settings.projectDirectory = configFile.PROJECT_DIR
-  	}
+    const configFile = require(program.config)
+    if (configFile.GITHUB_REPO) {
+      options.customVersion = false
+      options.semanticRelease.githubRepo = configFile.GITHUB_REPO
+    }
+    if (configFile.BRANCH) {
+      options.customVersion = false
+      options.semanticRelease.branch = configFile.BRANCH
+    }
+    if (configFile.PROJECT_DIR) {
+      options.projectDirectory = configFile.PROJECT_DIR
+    }
   } catch (error) {
-  	console.error('Failed to parse configuration file\n' + error)
+    console.error('Failed to parse configuration file\n' + error)
   }
 }
 if (program.githubRepo) {
-  settings.githubRepo = program.githubRepo
+  options.semanticRelease.githubRepo = program.githubRepo
   console.log('Set github repo')
 }
 
 if (program.buildDir) {
-  settings.projectDirectory = program.buildDir
+  options.projectDirectory = program.buildDir
 }
 if (program.branch) {
-  settings.branch = program.branch
+  options.semanticRelease.branch = program.branch
 }
-console.log('Settings: \n' + JSON.stringify(settings))
+
+if (program.releaseVersion) {
+  options.customVersion = true
+  options.version = program.releaseVersion
+}
+if (program.tag) {
+  options.customTag = true
+  options.tag = program.tag
+}
+console.log('Settings: \n' + JSON.stringify(options))
 
 try {
-  index.updateContractManager(settings.branch, settings.githubRepo, settings.projectDirectory)
+  index.updateContractManager(options)
 } catch (error) {
   console.error('Failed at calling contract manager' + error)
 }
