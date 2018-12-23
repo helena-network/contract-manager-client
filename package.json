@@ -11,6 +11,15 @@
   "license": "ISC",
   "dependencies": {
     "http": "0.0.0",
-    "request": "^2.88.0"
+    "request": "^2.88.0",
+    "semantic-release": "^15.13.1"
+  },
+  "devDependencies": {
+    "cz-conventional-changelog": "^2.1.0"
+  },
+  "config": {
+    "commitizen": {
+      "path": "./node_modules/cz-conventional-changelog"
+    }
   }
 }
