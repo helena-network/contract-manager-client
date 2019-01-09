@@ -1,8 +1,8 @@
 const request = require('request')
 const config = require('../config.js')
 
-// const endpoint = config.endpoint + config.port + config.route
-const endpoint = 'http://localhost' + config.port + config.route
+const endpoint = config.endpoint + config.port + config.route
+// const endpoint = 'http://localhost' + config.port + config.route
 
 function updateContract (_name, _version, _abi, _address, _tag) {
   return new Promise((resolve, reject) => {
